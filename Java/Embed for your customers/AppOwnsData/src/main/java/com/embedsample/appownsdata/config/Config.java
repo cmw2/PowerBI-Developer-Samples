@@ -17,7 +17,7 @@ public abstract class Config {
 	//	- For authentication with master user credential choose MasterUser as AuthenticationType.
 	//	- For authentication with app secret choose ServicePrincipal as AuthenticationType.
 	//	More details here: https://aka.ms/EmbedServicePrincipal
-	public static final String authenticationType = "";
+	public static final String authenticationType = "ServicePrincipal";
 	
 	//	Common configuration properties for both authentication types
 	// Enter workspaceId / groupId
@@ -39,7 +39,8 @@ public abstract class Config {
 		
 	//	DO NOT CHANGE
 	public static final String authorityUrl = "https://login.microsoftonline.com/";
-	public static final String scopeUrl = "https://analysis.windows.net/powerbi/api/.default";
+	//public static final String scopeUrl = "https://analysis.windows.net/powerbi/api/.default";
+	public static final String scopeUrl = "https://analysis.usgovcloudapi.net/powerbi/api/.default";
 	
 	
 	private Config(){

@@ -66,7 +66,7 @@ Licensed under the MIT license. -->
 			reportContainer = $("#report-container").get(0);
 			
 			// Initialize iframe for embedding report
-			powerbi.bootstrap(reportContainer, { type: "report" });
+			//powerbi.bootstrap(reportContainer, { type: "report" });
 			
 			// Request to get embed details
 			$.ajax({

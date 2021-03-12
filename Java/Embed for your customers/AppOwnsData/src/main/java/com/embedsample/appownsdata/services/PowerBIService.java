@@ -6,6 +6,7 @@
 package com.embedsample.appownsdata.services;
 
 import com.embedsample.appownsdata.config.Config;
+
 import com.embedsample.appownsdata.models.EmbedConfig;
 import com.embedsample.appownsdata.models.ReportConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -61,7 +62,8 @@ public class PowerBIService {
 		}
 		
 		// Get Report In Group API: https://api.powerbi.com/v1.0/myorg/groups/{workspaceId}/reports/{reportId}
-		StringBuilder urlStringBuilder = new StringBuilder("https://api.powerbi.com/v1.0/myorg/groups/"); 
+		//StringBuilder urlStringBuilder = new StringBuilder("https://api.powerbi.com/v1.0/myorg/groups/"); 
+		StringBuilder urlStringBuilder = new StringBuilder("https://api.powerbigov.us/v1.0/myorg/groups/");
 		urlStringBuilder.append(workspaceId);
 		urlStringBuilder.append("/reports/");
 		urlStringBuilder.append(reportId);
@@ -119,7 +121,9 @@ public class PowerBIService {
 		
 		// Create a list of DatasetIds
 		List<String> datasetIds = new ArrayList<String>();
-		datasetIds.add(responseObj.getString("datasetId"));
+		if (!responseObj.isNull("datasetId")) {
+			datasetIds.add(responseObj.getString("datasetId"));
+		}
 		
 		// Append to existing list of datasetIds to achieve dynamic binding later
 		for (String datasetId : additionalDatasetIds) {
@@ -127,8 +131,9 @@ public class PowerBIService {
 			System.out.println(datasetId);
 		}
 		
-		// Get embed token
-		reportEmbedConfig.embedToken = PowerBIService.getEmbedToken(accessToken, reportId, datasetIds);
+		// Get embed token		
+		//reportEmbedConfig.embedToken = PowerBIService.getEmbedToken(accessToken, reportId, datasetIds);
+		reportEmbedConfig.embedToken = PowerBIService.getEmbedToken(accessToken, reportId, workspaceId);
 		return reportEmbedConfig;
 	}
 	
@@ -162,7 +167,7 @@ public class PowerBIService {
 		for (String reportId : reportIds) {
 			
 			// Get Report In Group API: https://api.powerbi.com/v1.0/myorg/groups/{workspaceId}/reports/{reportId}
-			StringBuilder urlStringBuilder = new StringBuilder("https://api.powerbi.com/v1.0/myorg/groups/"); 
+			StringBuilder urlStringBuilder = new StringBuilder("https://api.powerbigov.us/v1.0/myorg/groups/"); 
 			urlStringBuilder.append(workspaceId);
 			urlStringBuilder.append("/reports/");
 			urlStringBuilder.append(reportId);
@@ -251,7 +256,7 @@ public class PowerBIService {
 		for (String reportId : reportIds) {
 			
 			// Get Report In Group API: https://api.powerbi.com/v1.0/myorg/groups/{workspaceId}/reports/{reportId}
-			StringBuilder urlStringBuilder = new StringBuilder("https://api.powerbi.com/v1.0/myorg/groups/"); 
+			StringBuilder urlStringBuilder = new StringBuilder("https://api.powerbigov.us/v1.0/myorg/groups/"); 
 			urlStringBuilder.append(workspaceId);
 			urlStringBuilder.append("/reports/");
 			urlStringBuilder.append(reportId);
@@ -329,9 +334,8 @@ public class PowerBIService {
 	 * @throws JsonMappingException 
 	 */
 	public static EmbedToken getEmbedToken(String accessToken, String reportId, List<String> datasetIds, String... targetWorkspaceIds) throws JsonMappingException, JsonProcessingException {
-		
 		// Embed Token - Generate Token REST API
-		final String uri = "https://api.powerbi.com/v1.0/myorg/GenerateToken";
+		final String uri = "https://api.powerbigov.us/v1.0/myorg/GenerateToken";
 		
 		RestTemplate restTemplate = new RestTemplate();
 		
@@ -411,7 +415,7 @@ public class PowerBIService {
 		// Note: This method is an example and is not consumed in this sample app
 
 		// Embed Token - Generate Token REST API
-		final String uri = "https://api.powerbi.com/v1.0/myorg/GenerateToken";
+		final String uri = "https://api.powerbigov.us/v1.0/myorg/GenerateToken";
 		
 		RestTemplate restTemplate = new RestTemplate();
 		
@@ -459,6 +463,73 @@ public class PowerBIService {
 		// Convert responseBody string into EmbedToken class object
 		EmbedToken embedToken = mapper.readValue(responseBody, EmbedToken.class);
 		
+		if (Config.DEBUG) {
+			
+			// Get the request Id
+			List<String> reqIdList = responseHeader.get("RequestId");
+			
+			// Log progress
+			logger.info("Retrieved Embed token\nEmbed Token Id: {}", embedToken.tokenId);
+			
+			// Log Request Id
+			if (reqIdList != null && !reqIdList.isEmpty()) {
+				for (String reqId: reqIdList) {
+					logger.info("Request Id: {}", reqId);
+				}
+			}
+		}
+		return embedToken;
+	}
+
+	/**
+	 * Get Embed token for single report, multiple datasetIds, and optional target workspaces
+	 * @see <a href="https://aka.ms/MultiResourceEmbedToken">Multi-Resource Embed Token</a>
+	 * @param {string} accessToken
+	 * @param {string} reportId
+	 * @param {List<string>} datasetId
+	 * @param {string} targetWorkspaceIds
+	 * @return EmbedToken 
+	 * @throws JsonProcessingException 
+	 * @throws JsonMappingException 
+	 */
+	public static EmbedToken getEmbedToken(String accessToken, String reportId, String workspaceId) throws JsonMappingException, JsonProcessingException {
+		// Generate Token In Group API: https://api.powerbi.com/v1.0/myorg/groups/{workspaceId}/reports/{reportId}/GenerateToken
+        
+		// Embed Token - Generate Token REST API
+		//final String uri = "https://api.powerbigov.us/v1.0/myorg/groups/";
+		StringBuilder urlStringBuilder = new StringBuilder("https://api.powerbigov.us/v1.0/myorg/groups/");
+		urlStringBuilder.append(workspaceId);
+		urlStringBuilder.append("/reports/");
+		urlStringBuilder.append(reportId);
+		urlStringBuilder.append("/GenerateToken");
+		
+		RestTemplate restTemplate = new RestTemplate();
+		
+		// Create request header
+		HttpHeaders headers = new HttpHeaders();
+		headers.put("Content-Type", Arrays.asList("application/json"));
+		headers.put("Authorization", Arrays.asList("Bearer " + accessToken));
+		
+		// Request body
+		JSONObject requestBody = new JSONObject();
+		requestBody.put("accessLevel", "view");
+				
+		// Add (body, header) to HTTP entity
+		HttpEntity<String> httpEntity = new HttpEntity<> (requestBody.toString(), headers);
+		
+		// Call the API
+		String endPointUrl = urlStringBuilder.toString();
+		ResponseEntity<String> response = restTemplate.postForEntity(endPointUrl, httpEntity, String.class);
+		HttpHeaders responseHeader = response.getHeaders();
+		String responseBody = response.getBody();
+		
+		// Create Object Mapper to convert String into Object
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		
+		// Convert responseBody string into EmbedToken class object
+		EmbedToken embedToken = mapper.readValue(responseBody, EmbedToken.class);
+
 		if (Config.DEBUG) {
 			
 			// Get the request Id
